@@ -1,0 +1,17 @@
+FUNCIONAIS
+- Usuário pode criar elementos e associar uma descrição a eles:
+    * questões
+    * opções
+    * critérios
+- Usuário pode criar/editar/excluir relacionamentos:
+    * Questões podem ter zero ou mais opções
+    * Questões podem ter zero ou mais critérios
+    * Opções podem ter zero ou mais questões
+    * Opções podem ter zero ou mais critérios
+- Os relacionamentos são direcionais
+- Há dois tipos de relacionamento:
+    * pró: significa que o primeiro elemento favorece o segundo
+    * contra: significa que o primeiro elemento não favorece o segundo
+
+NÃO FUNCIONAIS
+- O sistema deve ser entregue até o dia 19/11/2009

@@ -1,0 +1,77 @@
+>>> from qoc import *
+
+Element creation
+>>> c = Criterion('criterion1')
+>>> o = Option('option1')
+>>> q = Question('question1')
+>>> c2 = Criterion()
+Traceback (most recent call last):
+    ...
+TypeError: __init__() takes exactly 2 arguments (1 given)
+>>> o2 = Option()
+Traceback (most recent call last):
+    ...
+TypeError: __init__() takes exactly 2 arguments (1 given)
+>>> q2 = Question()
+Traceback (most recent call last):
+    ...
+TypeError: __init__() takes exactly 2 arguments (1 given)
+
+
+Relationship creation
+>>> q.addRelationship(o)
+>>> o.addRelationship(c)
+>>> o.addRelationship(q)
+>>> q.addRelationship(c, False)
+>>> q.addRelationship(o)
+Traceback (most recent call last):
+    ...
+RelationshipAlreadyExists
+>>> o.addRelationship(q)
+Traceback (most recent call last):
+    ...
+RelationshipAlreadyExists
+>>> c.addRelationship(o)
+Traceback (most recent call last):
+    ...
+AttributeError: Criterion instance has no attribute 'addRelationship'
+
+
+Relationship comparisons
+>>> r = Relationship(q, o)
+>>> r == Relationship(q, o)
+True
+>>> r == Relationship(o, q)
+False
+>>> r == Relationship(q, c)
+False
+>>> Relationship(q, c) == Relationship(q, c)
+True
+
+
+Relationship checking and updating
+>>> o.hasRelationship(c)
+0
+>>> q.hasRelationship(o)
+0
+>>> q.hasRelationship(c)
+1
+>>> q.removeRelationship(o)
+>>> q.hasRelationship(o)
+-1
+>>> o.hasRelationship(c)
+0
+>>> o.favors(c)
+True
+>>> o.removeRelationship(c)
+>>> o.favors(c)
+Traceback (most recent call last):
+    ...
+RelationshipDoesNotExist
+>>> o.hasRelationship(c)
+-1
+>>> o.addRelationship(c, False)
+>>> o.favors(c)
+False
+>>> o.hasRelationship(c)
+1
