@@ -16,7 +16,7 @@ class RelationshipNotPossible(Exception):
     possible due to restrictions in the first element.'''
     pass
 
-class Relational:
+class Relational(object):
     def __init__(self, relates_to = []):
         '''Defines a Relational object.
         
@@ -84,7 +84,7 @@ class Relational:
             raise RelationshipDoesNotExist
         
 
-class Relationship:
+class Relationship(object):
     def __init__(self, elementA, elementB, pro=True):
         '''Defines a directional relationship from the first to the second
         element.
@@ -105,7 +105,7 @@ class Relationship:
         return (self.elementA == other.elementA) \
             and (self.elementB == other.elementB)
 
-class Element:
+class Element(object):
     def __init__(self, description):
         '''Defines an element.
         
