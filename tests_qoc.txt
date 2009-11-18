@@ -34,7 +34,7 @@ RelationshipAlreadyExists
 >>> c.addRelationship(o)
 Traceback (most recent call last):
     ...
-AttributeError: Criterion instance has no attribute 'addRelationship'
+AttributeError: 'Criterion' object has no attribute 'addRelationship'
 
 
 Relationship comparisons
