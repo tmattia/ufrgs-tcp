@@ -91,10 +91,12 @@ class GUI:
         dialog = self.widgetTree.get_widget('textInputDialog')
         dialog.set_title(title)
         
+        entry = self.widgetTree.get_widget('textInputEntry')
+        entry.grab_focus()
+        
         response = dialog.run()
         dialog.hide()
         
-        entry = self.widgetTree.get_widget('textInputEntry')
         text = ''
         if response == 1:
             text = entry.get_text()
