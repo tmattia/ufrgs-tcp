@@ -20,14 +20,56 @@ class GUI:
         self.widgetTree = gtk.glade.XML('gui.glade')
         self.widgetTree.signal_autoconnect(self)
         
+        self.drawingArea = self.widgetTree.get_widget('drawingarea1')
+        
+        self.statusbar = self.widgetTree.get_widget('statusbar1')
+        
         self.mainWindow = self.widgetTree.get_widget('window1')
         self.mainWindow.show_all()
+        
+        self.NOP = 0
+        self.INSERT_CRITERION = 1
+        self.INSERT_OPTION = 2
+        self.INSERT_QUESTION = 3
+        self.statusMsg = {
+            self.NOP: '',
+            self.INSERT_CRITERION: 'Inserting new Criterion. Press "Esc" to cancel.',
+            self.INSERT_OPTION: 'Inserting new Option. Press "Esc" to cancel.',
+            self.INSERT_QUESTION: 'Inserting new Question. Press "Esc" to cancel.',
+        }
+        self.statusHandlers = {
+            self.INSERT_CRITERION: self.drawRectangle,
+            self.INSERT_OPTION: self.drawRectangle,
+            self.INSERT_QUESTION: self.drawRectangle,
+        }
+        self.currentStatus = self.NOP
+    
+    def drawRectangle(self, event):
+        '''Draws a rectangle on the drawing area from a given mouse click event
+        
+        event: the mouse click event'''
+        print event.x, event.y
+        
+        cr = self.drawingArea.window.cairo_create()
+        cr.set_source_rgb(1.0, 1.0, 1.0)
+        cr.rectangle(event.x, event.y, 100, 100)
+        cr.fill()
+    
+    def handleKeyboard(self, widget, event):
+        '''Handles a keyboard release event on the main window'''
+        if event.keyval == 65307:
+            if self.currentStatus:
+                self.setStatus(self.NOP)
     
     def drawingAreaClick(self, widget, event):
         '''Handles a click event on the drawing area.'''
         if event.button == 1:
             # left button
             print event.x, event.y
+            
+            if self.currentStatus in self.statusHandlers:
+                self.statusHandlers[self.currentStatus](event)
+                
     
     def new(self, widget):
         '''Creates a new diagram.'''
@@ -53,26 +95,36 @@ class GUI:
         '''Shows "about" information.'''
         print 'about'
     
+    def setStatus(self, status, obj=None):
+        '''Defines the application status and writes a message on the statusbar.
+        Also, optionally holds an object until the next setStatus call.
+        
+        status: the status code'''
+        contextId = self.statusbar.get_context_id('teste')
+        self.statusbar.push(contextId, self.statusMsg[status])
+        self.currentStatus = status
+        self.obj = obj
+    
     def insertCriterion(self, widget):
         '''Inserts a new criterion on the drawing area.'''
         description = self.getTextInput('New criterion', 'Description: ')
         if description:
             c = Criterion(description)
-            print c
+            self.setStatus(self.INSERT_CRITERION, c)
     
     def insertOption(self, widget):
         '''Inserts a new option on the drawing area.'''
         description = self.getTextInput('New option', 'Description: ')
         if description:
             o = Option(description)
-            print o
+            self.setStatus(self.INSERT_OPTION, o)
     
     def insertQuestion(self, widget):
         '''Inserts a new question on the drawing area."'''
         description = self.getTextInput('New question', 'Description: ')
         if description:
             q = Question(description)
-            print q
+            self.setStatus(self.INSERT_QUESTION, q)
     
     def insertRelationship(self, widget):
         '''Inserts a new relationship on the drawing area.'''
