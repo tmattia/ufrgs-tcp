@@ -17,7 +17,7 @@ FUNCIONAIS
     * Básicas de arquivos
     * De inserção de elementos
     * Básicas de ajuda
-- Interface deve representar elementos quadrados
+- Interface deve representar elementos através de quadrados com texto dentro
 - Interface deve representar elementos diferentes com cores de fundo diferentes
 
 NÃO FUNCIONAIS
