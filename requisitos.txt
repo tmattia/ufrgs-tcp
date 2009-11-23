@@ -17,7 +17,8 @@ FUNCIONAIS
     * Básicas de arquivos
     * De inserção de elementos
     * Básicas de ajuda
-
+- Interface deve representar elementos quadrados
+- Interface deve representar elementos diferentes com cores de fundo diferentes
 
 NÃO FUNCIONAIS
 - O sistema deve ser entregue até o dia 19/11/2009

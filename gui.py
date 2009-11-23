@@ -12,7 +12,49 @@ try:
 except:
     sys.exit(1)
 
-from qoc import Criterion, Option, Question
+from qoc import Element, Criterion, Option, Question
+
+class DiagramElement(Element):
+    def __init__(self, description):
+        '''Defines a diagram element.
+        
+        description: diagram element's description
+        '''
+        Element.__init__(self, description)
+        self.color = None
+        self.x = None
+        self.y = None
+    
+    def setPosition(self, x, y):
+        self.x = x
+        self.y = y
+
+class DiagramCriterion(DiagramElement):
+    '''Defines a diagram criterion, which is represented as a red square.
+    
+    description: diagram criterion's description
+    '''
+    def __init__(self, description):
+        DiagramElement.__init__(self, description)
+        self.color = (1.0, 0.0, 0.0)
+
+class DiagramOption(DiagramElement):
+    '''Defines a diagram option, which is represented as a green square.
+    
+    description: diagram option's description
+    '''
+    def __init__(self, description):
+        DiagramElement.__init__(self, description)
+        self.color = (0.0, 1.0, 0.0)
+
+class DiagramQuestion(DiagramElement):
+    '''Defines a diagram question, which is represented as a blue square.
+    
+    description: diagram question's description
+    '''
+    def __init__(self, description):
+        DiagramElement.__init__(self, description)
+        self.color = (0.0, 0.0, 1.0)
 
 class GUI:
     def __init__(self):
@@ -21,11 +63,14 @@ class GUI:
         self.widgetTree.signal_autoconnect(self)
         
         self.drawingArea = self.widgetTree.get_widget('drawingarea1')
+        self.drawingArea.connect('expose-event', self.draw)
         
         self.statusbar = self.widgetTree.get_widget('statusbar1')
         
         self.mainWindow = self.widgetTree.get_widget('window1')
         self.mainWindow.show_all()
+        
+        self.elements = []
         
         self.NOP = 0
         self.INSERT_CRITERION = 1
@@ -37,38 +82,34 @@ class GUI:
             self.INSERT_OPTION: 'Inserting new Option. Press "Esc" to cancel.',
             self.INSERT_QUESTION: 'Inserting new Question. Press "Esc" to cancel.',
         }
-        self.statusHandlers = {
-            self.INSERT_CRITERION: self.drawRectangle,
-            self.INSERT_OPTION: self.drawRectangle,
-            self.INSERT_QUESTION: self.drawRectangle,
-        }
         self.currentStatus = self.NOP
     
-    def drawRectangle(self, event):
-        '''Draws a rectangle on the drawing area from a given mouse click event
-        
-        event: the mouse click event'''
-        print event.x, event.y
-        
+    def draw(self, widget, event):
+        '''Draws the diagram elements in the drawing area'''
         cr = self.drawingArea.window.cairo_create()
-        cr.set_source_rgb(1.0, 1.0, 1.0)
-        cr.rectangle(event.x, event.y, 100, 100)
-        cr.fill()
+        for element in self.elements:
+            cr.set_source_rgb(element.color[0], element.color[1], element.color[2])
+            cr.rectangle(element.x, element.y, 100, 100)
+            cr.fill()
     
     def handleKeyboard(self, widget, event):
         '''Handles a keyboard release event on the main window'''
-        if event.keyval == 65307:
-            if self.currentStatus:
-                self.setStatus(self.NOP)
+        ESC = 65307
+        if self.currentStatus and event.keyval == ESC:
+            self.setStatus(self.NOP)
     
     def drawingAreaClick(self, widget, event):
         '''Handles a click event on the drawing area.'''
-        if event.button == 1:
-            # left button
-            print event.x, event.y
-            
-            if self.currentStatus in self.statusHandlers:
-                self.statusHandlers[self.currentStatus](event)
+        opts = [
+            self.INSERT_CRITERION,
+            self.INSERT_OPTION,
+            self.INSERT_QUESTION
+        ]
+        if event.button == 1 and self.currentStatus in opts:
+            self.obj.setPosition(event.x, event.y)
+            self.elements.append(self.obj)
+            self.setStatus(self.NOP)
+            self.draw(widget, event)
                 
     
     def new(self, widget):
@@ -100,7 +141,7 @@ class GUI:
         Also, optionally holds an object until the next setStatus call.
         
         status: the status code'''
-        contextId = self.statusbar.get_context_id('teste')
+        contextId = self.statusbar.get_context_id('status')
         self.statusbar.push(contextId, self.statusMsg[status])
         self.currentStatus = status
         self.obj = obj
@@ -109,21 +150,21 @@ class GUI:
         '''Inserts a new criterion on the drawing area.'''
         description = self.getTextInput('New criterion', 'Description: ')
         if description:
-            c = Criterion(description)
+            c = DiagramCriterion(description)
             self.setStatus(self.INSERT_CRITERION, c)
     
     def insertOption(self, widget):
         '''Inserts a new option on the drawing area.'''
         description = self.getTextInput('New option', 'Description: ')
         if description:
-            o = Option(description)
+            o = DiagramOption(description)
             self.setStatus(self.INSERT_OPTION, o)
     
     def insertQuestion(self, widget):
         '''Inserts a new question on the drawing area."'''
         description = self.getTextInput('New question', 'Description: ')
         if description:
-            q = Question(description)
+            q = DiagramQuestion(description)
             self.setStatus(self.INSERT_QUESTION, q)
     
     def insertRelationship(self, widget):
