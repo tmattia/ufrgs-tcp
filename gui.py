@@ -15,6 +15,13 @@ except:
 import cairo
 from qoc import Element, Criterion, Option, Question
 
+# keyboard event codes
+ESC = 65307
+LEFT = 65361
+UP = 65362
+RIGHT = 65363
+DOWN = 65364
+
 class DiagramElement(Element):
     def __init__(self, description):
         '''Defines a diagram element.
@@ -141,18 +148,44 @@ class GUI:
             self.SELECTED_ELEMENT: 'Selected element. Press "Esc" to cancel.'
         }
         self.currentStatus = self.NOP
+        
+        self.BG_COLOR = (1.0, 1.0, 1.0)
+        self.WIDTH = 800
+        self.HEIGHT = 600
     
     def draw(self, widget=None, event=None):
         '''Draws the diagram elements in the drawing area'''
         cr = self.drawingArea.window.cairo_create()
+        
+        cr.set_source_rgb(self.BG_COLOR[0], self.BG_COLOR[1], self.BG_COLOR[2])
+        cr.rectangle(0, 0, self.WIDTH, self.HEIGHT)
+        cr.fill()
+        
         for el in self.elements:
             el.draw(cr)
     
     def handleKeyboard(self, widget, event):
         '''Handles a keyboard release event on the main window'''
-        ESC = 65307
         if self.currentStatus and event.keyval == ESC:
             self.setStatus(self.NOP)
+        elif self.currentStatus == self.SELECTED_ELEMENT \
+            and event.keyval in [LEFT, UP, RIGHT, DOWN]:
+            self.moveSelectedElement(event.keyval)
+    
+    def moveSelectedElement(self, direction):
+        '''Moves the currently selected element.
+        
+        direction: direction to move (up, down, right, left)
+        '''
+        if direction == UP:
+            self.obj.y -= 5
+        elif direction == DOWN:
+            self.obj.y += 5
+        elif direction == RIGHT:
+            self.obj.x += 5
+        elif direction == LEFT:
+            self.obj.x -= 5
+        self.draw()
     
     def addElement(self, el, x, y):
         '''Adds an element to the diagram.
@@ -175,8 +208,7 @@ class GUI:
         for el in self.elements:
             if x > el.x and x < (el.x + el.width) \
                 and y > el.y and y < (el.y + el.height):
-                self.obj = el
-                self.setStatus(self.SELECTED_ELEMENT)
+                self.setStatus(self.SELECTED_ELEMENT, el)
                 return el
         return None
     
