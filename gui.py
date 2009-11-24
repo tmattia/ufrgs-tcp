@@ -25,6 +25,8 @@ class DiagramElement(Element):
         self.color = None
         self.x = None
         self.y = None
+        self.width = None
+        self.height = None
         
         self.FONT_FACE = 'Monospace'
         self.FONT_SIZE = 13
@@ -54,17 +56,19 @@ class DiagramElement(Element):
         
         textlen = len(self.description)
         
-        width = self.CHAR_WIDTH * 2
-        if textlen > self.LINE_LENGTH:
-            width += self.LINE_LENGTH * self.CHAR_WIDTH
-        else:
-            width += textlen * self.CHAR_WIDTH
+        if not self.width:
+            self.width = self.CHAR_WIDTH * 2
+            if textlen > self.LINE_LENGTH:
+                self.width += self.LINE_LENGTH * self.CHAR_WIDTH
+            else:
+                self.width += textlen * self.CHAR_WIDTH
         
-        height = ((textlen / self.LINE_LENGTH) + 1) * \
-            (self.LINE_HEIGHT + self.LINE_PADDING) + (self.LINE_PADDING * 2)
+        if not self.height:
+            self.height = ((textlen / self.LINE_LENGTH) + 1) * \
+                (self.LINE_HEIGHT + self.LINE_PADDING) + (self.LINE_PADDING * 2)
         
         cr.set_source_rgb(self.color[0], self.color[1], self.color[2])
-        cr.rectangle(self.x, self.y, width, height)
+        cr.rectangle(self.x, self.y, self.width, self.height)
         cr.fill()
         
         cr.set_source_rgb(self.FONT_COLOR[0], self.FONT_COLOR[1],
@@ -128,15 +132,17 @@ class GUI:
         self.INSERT_CRITERION = 1
         self.INSERT_OPTION = 2
         self.INSERT_QUESTION = 3
+        self.SELECTED_ELEMENT = 4
         self.statusMsg = {
             self.NOP: '',
             self.INSERT_CRITERION: 'Inserting new Criterion. Press "Esc" to cancel.',
             self.INSERT_OPTION: 'Inserting new Option. Press "Esc" to cancel.',
             self.INSERT_QUESTION: 'Inserting new Question. Press "Esc" to cancel.',
+            self.SELECTED_ELEMENT: 'Selected element. Press "Esc" to cancel.'
         }
         self.currentStatus = self.NOP
     
-    def draw(self, widget, event):
+    def draw(self, widget=None, event=None):
         '''Draws the diagram elements in the drawing area'''
         cr = self.drawingArea.window.cairo_create()
         for el in self.elements:
@@ -148,6 +154,32 @@ class GUI:
         if self.currentStatus and event.keyval == ESC:
             self.setStatus(self.NOP)
     
+    def addElement(self, el, x, y):
+        '''Adds an element to the diagram.
+        
+        el: the element
+        x: x coordinate
+        y: y coordinate
+        '''
+        el.setPosition(x, y)
+        self.elements.append(el)
+        self.draw()
+    
+    def selectElement(self, x, y):
+        '''Selects an element at a given position. If there's no element,
+        returns None, else returns the element.
+        
+        x: x coordinate
+        y: y coordinate
+        '''
+        for el in self.elements:
+            if x > el.x and x < (el.x + el.width) \
+                and y > el.y and y < (el.y + el.height):
+                self.obj = el
+                self.setStatus(self.SELECTED_ELEMENT)
+                return el
+        return None
+    
     def drawingAreaClick(self, widget, event):
         '''Handles a click event on the drawing area.'''
         opts = [
@@ -155,12 +187,13 @@ class GUI:
             self.INSERT_OPTION,
             self.INSERT_QUESTION
         ]
-        if event.button == 1 and self.currentStatus in opts:
-            self.obj.setPosition(event.x, event.y)
-            self.elements.append(self.obj)
-            self.setStatus(self.NOP)
-            self.draw(widget, event)
+        if event.button == 1:
+            if self.currentStatus in opts:
+                self.addElement(self.obj, event.x, event.y)
+                self.setStatus(self.NOP)
                 
+            elif self.currentStatus == self.NOP:
+                self.selectElement(event.x, event.y)
     
     def new(self, widget):
         '''Creates a new diagram.'''
