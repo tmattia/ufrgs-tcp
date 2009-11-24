@@ -25,10 +25,61 @@ class DiagramElement(Element):
         self.color = None
         self.x = None
         self.y = None
+        
+        self.FONT_FACE = 'Monospace'
+        self.FONT_SIZE = 13
+        self.FONT_COLOR = (0.0, 0.0, 0.0)
+        self.LINE_LENGTH = 30
+        self.LINE_HEIGHT = 10
+        self.LINE_PADDING = 5
+        self.CHAR_WIDTH = 8
     
     def setPosition(self, x, y):
+        '''Defines the element position.
+        
+        x: x coordinate
+        y: y coordinate
+        '''
         self.x = x
         self.y = y
+    
+    def draw(self, cr):
+        '''Draws the element.
+        
+        cr: cairo context in which the element will be drawn
+        '''
+        cr.select_font_face(self.FONT_FACE, cairo.FONT_SLANT_NORMAL,
+            cairo.FONT_WEIGHT_NORMAL)
+        cr.set_font_size(self.FONT_SIZE)
+        
+        textlen = len(self.description)
+        
+        width = self.CHAR_WIDTH * 2
+        if textlen > self.LINE_LENGTH:
+            width += self.LINE_LENGTH * self.CHAR_WIDTH
+        else:
+            width += textlen * self.CHAR_WIDTH
+        
+        height = ((textlen / self.LINE_LENGTH) + 1) * \
+            (self.LINE_HEIGHT + self.LINE_PADDING) + (self.LINE_PADDING * 2)
+        
+        cr.set_source_rgb(self.color[0], self.color[1], self.color[2])
+        cr.rectangle(self.x, self.y, width, height)
+        cr.fill()
+        
+        cr.set_source_rgb(self.FONT_COLOR[0], self.FONT_COLOR[1],
+            self.FONT_COLOR[2])
+        if textlen > self.LINE_LENGTH:
+            for i in xrange(textlen / self.LINE_HEIGHT):
+                cr.move_to(self.x + self.CHAR_WIDTH,
+                    self.y + (self.LINE_HEIGHT + self.LINE_PADDING) * (i + 1))
+                start = i * self.LINE_LENGTH
+                finish = (i + 1) * self.LINE_LENGTH
+                cr.show_text(self.description[start:finish])
+        else:
+            cr.move_to(self.x + self.CHAR_WIDTH,
+                self.y + self.LINE_HEIGHT + self.LINE_PADDING)
+            cr.show_text(self.description)
 
 class DiagramCriterion(DiagramElement):
     '''Defines a diagram criterion, which is represented as a red square.
@@ -84,51 +135,12 @@ class GUI:
             self.INSERT_QUESTION: 'Inserting new Question. Press "Esc" to cancel.',
         }
         self.currentStatus = self.NOP
-        
-        self.FONT_FACE = 'Monospace'
-        self.FONT_SIZE = 13
-        self.FONT_COLOR = (0.0, 0.0, 0.0)
-        self.LINE_LENGTH = 30
-        self.LINE_HEIGHT = 10
-        self.LINE_PADDING = 5
-        self.CHAR_WIDTH = 8
     
     def draw(self, widget, event):
         '''Draws the diagram elements in the drawing area'''
         cr = self.drawingArea.window.cairo_create()
-        cr.select_font_face(self.FONT_FACE, cairo.FONT_SLANT_NORMAL,
-            cairo.FONT_WEIGHT_NORMAL)
-        cr.set_font_size(self.FONT_SIZE)
-        
         for el in self.elements:
-            textlen = len(el.description)
-            
-            width = self.CHAR_WIDTH * 2
-            if textlen > self.LINE_LENGTH:
-                width += self.LINE_LENGTH * self.CHAR_WIDTH
-            else:
-                width += textlen * self.CHAR_WIDTH
-            
-            height = ((textlen / self.LINE_LENGTH) + 1) * \
-                (self.LINE_HEIGHT + self.LINE_PADDING * 2)
-            
-            cr.set_source_rgb(el.color[0], el.color[1], el.color[2])
-            cr.rectangle(el.x, el.y, width, height)
-            cr.fill()
-            
-            cr.set_source_rgb(self.FONT_COLOR[0], self.FONT_COLOR[1],
-                self.FONT_COLOR[2])
-            if textlen > self.LINE_LENGTH:
-                for i in xrange(textlen / self.LINE_HEIGHT):
-                    cr.move_to(el.x + self.CHAR_WIDTH,
-                        el.y + (self.LINE_HEIGHT + self.LINE_PADDING) * (i + 1))
-                    start = i * self.LINE_LENGTH
-                    finish = (i + 1) * self.LINE_LENGTH
-                    cr.show_text(el.description[start:finish])
-            else:
-                cr.move_to(el.x + self.CHAR_WIDTH,
-                    el.y + self.LINE_HEIGHT + self.LINE_PADDING)
-                cr.show_text(el.description)
+            el.draw(cr)
     
     def handleKeyboard(self, widget, event):
         '''Handles a keyboard release event on the main window'''
