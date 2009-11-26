@@ -13,7 +13,8 @@ except:
     sys.exit(1)
 
 import cairo
-from qoc import Element, Criterion, Option, Question, Relational, Relationship, RelationshipNotPossible, RelationshipAlreadyExists
+from qoc import Element, Criterion, Option, Question, Relational, \
+    Relationship,RelationshipNotPossible, RelationshipAlreadyExists
 from math import pi
 
 # keyboard event codes
@@ -158,22 +159,111 @@ class DiagramQuestion(DiagramElement, Question):
         Question.__init__(self, description)
         self.color = (0.0, 0.0, 1.0)
 
-class GUI:
-    def __init__(self):
-        '''Application setup'''
-        self.widgetTree = gtk.glade.XML('gui.glade')
-        self.widgetTree.signal_autoconnect(self)
+class Diagram(object):
+    def __init__(self, drawingArea):
+        '''Defines a diagram and it's drawing area.
         
-        self.drawingArea = self.widgetTree.get_widget('drawingarea1')
+        drawingArea: drawingArea widget
+        '''
+        self.drawingArea = drawingArea
         self.drawingArea.connect('expose-event', self.draw)
-        
-        self.statusbar = self.widgetTree.get_widget('statusbar1')
-        
-        self.mainWindow = self.widgetTree.get_widget('window1')
-        self.mainWindow.show_all()
         
         self.elements = []
         self.relationships = []
+        
+        self.BG_COLOR = (1.0, 1.0, 1.0)
+        self.WIDTH = 800
+        self.HEIGHT = 600
+    
+    def draw(self, event=None, widget=None):
+        '''Draws the diagram.'''
+        cr = self.drawingArea.window.cairo_create()
+        cr.set_source_rgb(self.BG_COLOR[0], self.BG_COLOR[1], self.BG_COLOR[2])
+        cr.rectangle(0, 0, self.WIDTH, self.HEIGHT)
+        cr.fill()
+        
+        for el in self.elements + self.relationships:
+            el.draw(cr)
+    
+    def removeElement(self, el):
+        '''Removes the currently selected element from the diagram. If there are
+        any relationships with the currently selected element, they are removed
+        as well.'''
+        for el2 in self.elements:
+            if isinstance(el2, Relational) and el2.hasRelationship(el) >= 0:
+                r = el2.removeRelationship(el)
+                del self.relationships[self.relationships.index(r)]
+            elif isinstance(el, Relational) and el.hasRelationship(el2) >= 0:
+                r = el.removeRelationship(el2)
+                del self.relationships[self.relationships.index(r)]
+        del self.elements[self.elements.index(el)]
+        self.draw()
+    
+    def moveElement(self, el, direction):
+        '''Moves the currently selected element.
+        
+        el: the element
+        direction: direction to move (up, down, right, left)
+        '''
+        if direction == UP:
+            el.y -= 5
+        elif direction == DOWN:
+            el.y += 5
+        elif direction == RIGHT:
+            el.x += 5
+        elif direction == LEFT:
+            el.x -= 5
+        self.draw()
+    
+    def addElement(self, el, x, y):
+        '''Adds an element to the diagram.
+        
+        el: the element
+        x: x coordinate
+        y: y coordinate
+        '''
+        el.setPosition(x, y)
+        self.elements.append(el)
+        self.draw()
+    
+    def addRelationship(self, elementA, elementB):
+        '''Adds a directional relationship from the first to the second element.
+        
+        elementA: first element
+        elementB: second element
+        '''
+        r = DiagramRelationship(elementA, elementB)
+        self.relationships.append(r)
+        self.draw()
+    
+    def selectElement(self, x, y):
+        '''Selects an element at a given position. If there's no element,
+        returns None, else returns the element.
+        
+        x: x coordinate
+        y: y coordinate
+        '''
+        for el in self.elements:
+            if el.hasPoint(x, y):
+                return el
+        return None
+
+class GUI:
+    def __init__(self):
+        '''Defines the diagram's GUI.'''
+        self.widgetTree = gtk.glade.XML('gui.glade')
+        self.widgetTree.signal_autoconnect(self)
+        
+        drawingArea = self.widgetTree.get_widget('drawingarea1')
+        self.diagram = Diagram(drawingArea)
+        
+        self.statusbar = self.widgetTree.get_widget('statusbar1')
+        
+        mainWindow = self.widgetTree.get_widget('window1')
+        mainWindow.show_all()
+        
+        self.currentStatus = None
+        self.obj = None
         
         self.NOP = 0
         self.INSERT_CRITERION = 1
@@ -189,127 +279,61 @@ class GUI:
             self.INSERT_RELATIONSHIP: 'Select two elementos to insert a new Relationship. Press "Esc" to cancel.',
             self.SELECTED_ELEMENT: 'Selected element. Press "Esc" to cancel.'
         }
-        self.currentStatus = self.NOP
-        
-        self.BG_COLOR = (1.0, 1.0, 1.0)
-        self.WIDTH = 800
-        self.HEIGHT = 600
+        self.setStatus(self.NOP)
     
-    def draw(self, widget=None, event=None):
-        '''Draws the diagram elements in the drawing area'''
-        cr = self.drawingArea.window.cairo_create()
+    def setStatus(self, status, obj=None):
+        '''Defines the application status and writes a message on the statusbar.
+        Also, optionally holds an object until the next setStatus call.
         
-        cr.set_source_rgb(self.BG_COLOR[0], self.BG_COLOR[1], self.BG_COLOR[2])
-        cr.rectangle(0, 0, self.WIDTH, self.HEIGHT)
-        cr.fill()
-        
-        for el in self.elements + self.relationships:
-            el.draw(cr)
+        status: the status code'''
+        contextId = self.statusbar.get_context_id('status')
+        self.statusbar.push(contextId, self.statusMsg[status])
+        self.currentStatus = status
+        self.obj = obj
     
     def handleKeyboard(self, widget, event):
         '''Handles a keyboard release event on the main window'''
-        if self.currentStatus and event.keyval == ESC:
+        if self.currentStatus != self.NOP and event.keyval == ESC:
             self.setStatus(self.NOP)
         elif self.currentStatus == self.SELECTED_ELEMENT:
             if event.keyval == DELETE:
-                self.removeSelectedElement()
+                self.diagram.removeElement(self.obj)
+                self.setStatus(self.NOP)
             elif event.keyval in [LEFT, UP, RIGHT, DOWN]:
-                self.moveSelectedElement(event.keyval)
+                self.diagram.moveElement(self.obj, event.keyval)
     
-    def removeSelectedElement(self):
-        '''Removes the currently selected element from the diagram. If there are
-        any relationships with the currently selected element, they are removed
-        as well.'''
-        for el in self.elements:
-            if isinstance(el, Relational) and el.hasRelationship(self.obj) >= 0:
-                r = el.removeRelationship(self.obj)
-                self.relationships.pop(self.relationships.index(r))
-            elif isinstance(self.obj, Relational) \
-                and self.obj.hasRelationship(el) >= 0:
-                r = self.obj.removeRelationship(el)
-                del self.relationships[self.relationships.index(r)]
-        del self.elements[self.elements.index(self.obj)]
-        self.setStatus(self.NOP)
-        self.draw()
-    
-    def moveSelectedElement(self, direction):
-        '''Moves the currently selected element.
+    def handleClick(self, widget, event):
+        '''Handles a left click event on the drawing area.'''
+        if event.button != 1:
+            return
         
-        direction: direction to move (up, down, right, left)
-        '''
-        if direction == UP:
-            self.obj.y -= 5
-        elif direction == DOWN:
-            self.obj.y += 5
-        elif direction == RIGHT:
-            self.obj.x += 5
-        elif direction == LEFT:
-            self.obj.x -= 5
-        self.draw()
-    
-    def addElement(self, el, x, y):
-        '''Adds an element to the diagram.
-        
-        el: the element
-        x: x coordinate
-        y: y coordinate
-        '''
-        el.setPosition(x, y)
-        self.elements.append(el)
-        self.draw()
-    
-    def selectElement(self, x, y):
-        '''Selects an element at a given position. If there's no element,
-        returns None, else returns the element.
-        
-        x: x coordinate
-        y: y coordinate
-        '''
-        for el in self.elements:
-            if el.hasPoint(x, y):
-                return el
-        return None
-    
-    def drawingAreaClick(self, widget, event):
-        '''Handles a click event on the drawing area.'''
         opts = [
             self.INSERT_CRITERION,
             self.INSERT_OPTION,
             self.INSERT_QUESTION
         ]
-        if event.button == 1:
-            if self.currentStatus in opts:
-                self.addElement(self.obj, event.x, event.y)
-                self.setStatus(self.NOP)
-                
-            elif self.currentStatus == self.NOP:
-                el = self.selectElement(event.x, event.y)
+        if self.currentStatus in opts:
+            self.diagram.addElement(self.obj, event.x, event.y)
+            self.setStatus(self.NOP)
+            
+        elif self.currentStatus == self.NOP:
+            el = self.diagram.selectElement(event.x, event.y)
+            if el:
+                self.setStatus(self.SELECTED_ELEMENT, el)
+            
+        elif self.currentStatus == self.INSERT_RELATIONSHIP:
+            if self.obj is None:
+                self.obj = self.diagram.selectElement(event.x, event.y)
+            else:
+                el = self.diagram.selectElement(event.x, event.y)
                 if el:
-                    self.setStatus(self.SELECTED_ELEMENT, el)
-                
-            elif self.currentStatus == self.INSERT_RELATIONSHIP:
-                self.handleInsertRelationship(event)
-    
-    def handleInsertRelationship(self, event):
-        '''Handles the states defined by mouse clicks between a insert
-        relationship action.
-        
-        event: the mouse click event'''
-        if self.obj is None:
-            self.obj = self.selectElement(event.x, event.y)
-        else:
-            el2 = self.selectElement(event.x, event.y)
-            try:
-                r = DiagramRelationship(self.obj, el2)
-                self.relationships.append(r)
-                self.draw()
-                self.setStatus(self.NOP)
-            except RelationshipAlreadyExists:
-                print 'ja existe'
-                self.setStatus(self.NOP)
-            except RelationshipNotPossible:
-                print 'nao pode relacao'
-                self.setStatus(self.NOP)
+                    try:
+                        self.diagram.addRelationship(self.obj, el)
+                    except RelationshipAlreadyExists:
+                        print 'ja existe'
+                    except RelationshipNotPossible:
+                        print 'nao pode relacao'
+                    self.setStatus(self.NOP)
     
     def new(self, widget):
         '''Creates a new diagram.'''
@@ -335,38 +359,28 @@ class GUI:
         '''Shows "about" information.'''
         print 'about'
     
-    def setStatus(self, status, obj=None):
-        '''Defines the application status and writes a message on the statusbar.
-        Also, optionally holds an object until the next setStatus call.
-        
-        status: the status code'''
-        contextId = self.statusbar.get_context_id('status')
-        self.statusbar.push(contextId, self.statusMsg[status])
-        self.currentStatus = status
-        self.obj = obj
-    
-    def insertCriterion(self, widget):
+    def handleInsertCriterion(self, widget):
         '''Inserts a new criterion on the drawing area.'''
         description = self.getTextInput('New criterion', 'Description: ')
         if description:
             c = DiagramCriterion(description)
             self.setStatus(self.INSERT_CRITERION, c)
     
-    def insertOption(self, widget):
+    def handleInsertOption(self, widget):
         '''Inserts a new option on the drawing area.'''
         description = self.getTextInput('New option', 'Description: ')
         if description:
             o = DiagramOption(description)
             self.setStatus(self.INSERT_OPTION, o)
     
-    def insertQuestion(self, widget):
+    def handleInsertQuestion(self, widget):
         '''Inserts a new question on the drawing area."'''
         description = self.getTextInput('New question', 'Description: ')
         if description:
             q = DiagramQuestion(description)
             self.setStatus(self.INSERT_QUESTION, q)
     
-    def insertRelationship(self, widget):
+    def handleInsertRelationship(self, widget):
         '''Inserts a new relationship on the drawing area.'''
         self.setStatus(self.INSERT_RELATIONSHIP)
     

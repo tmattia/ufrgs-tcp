@@ -91,7 +91,7 @@
                         <property name="visible">True</property>
                         <property name="label" translatable="yes">_Criterion</property>
                         <property name="use_underline">True</property>
-                        <signal name="activate" handler="insertCriterion"/>
+                        <signal name="activate" handler="handleInsertCriterion"/>
                       </widget>
                     </child>
                     <child>
@@ -99,7 +99,7 @@
                         <property name="visible">True</property>
                         <property name="label" translatable="yes">_Option</property>
                         <property name="use_underline">True</property>
-                        <signal name="activate" handler="insertOption"/>
+                        <signal name="activate" handler="handleInsertOption"/>
                       </widget>
                     </child>
                     <child>
@@ -107,7 +107,7 @@
                         <property name="visible">True</property>
                         <property name="label" translatable="yes">_Question</property>
                         <property name="use_underline">True</property>
-                        <signal name="activate" handler="insertQuestion"/>
+                        <signal name="activate" handler="handleInsertQuestion"/>
                       </widget>
                     </child>
                     <child>
@@ -120,7 +120,7 @@
                         <property name="visible">True</property>
                         <property name="label" translatable="yes">_Relationship</property>
                         <property name="use_underline">True</property>
-                        <signal name="activate" handler="insertRelationship"/>
+                        <signal name="activate" handler="handleInsertRelationship"/>
                       </widget>
                     </child>
                   </widget>
@@ -162,7 +162,7 @@
               <widget class="GtkDrawingArea" id="drawingarea1">
                 <property name="visible">True</property>
                 <property name="events">GDK_BUTTON_PRESS_MASK | GDK_STRUCTURE_MASK</property>
-                <signal name="button_press_event" handler="drawingAreaClick"/>
+                <signal name="button_press_event" handler="handleClick"/>
               </widget>
             </child>
           </widget>
