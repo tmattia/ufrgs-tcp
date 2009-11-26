@@ -21,6 +21,7 @@ FUNCIONAIS
 - Interface deve representar elementos diferentes com cores de fundo diferentes
 - Interface deve permitir seleção de elementos através de clique do mouse
 - Interface deve permitir movimentação de elementos na tela através de comandos do teclado
+- Interface deve permitir exclusão de elementos a partir de seleção
 
 NÃO FUNCIONAIS
 - O sistema deve ser entregue até o dia 19/11/2009

@@ -17,6 +17,7 @@ from qoc import Element, Criterion, Option, Question
 
 # keyboard event codes
 ESC = 65307
+DELETE = 65535
 LEFT = 65361
 UP = 65362
 RIGHT = 65363
@@ -168,9 +169,17 @@ class GUI:
         '''Handles a keyboard release event on the main window'''
         if self.currentStatus and event.keyval == ESC:
             self.setStatus(self.NOP)
-        elif self.currentStatus == self.SELECTED_ELEMENT \
-            and event.keyval in [LEFT, UP, RIGHT, DOWN]:
-            self.moveSelectedElement(event.keyval)
+        elif self.currentStatus == self.SELECTED_ELEMENT:
+            if event.keyval == DELETE:
+                self.removeSelectedElement()
+            elif event.keyval in [LEFT, UP, RIGHT, DOWN]:
+                self.moveSelectedElement(event.keyval)
+    
+    def removeSelectedElement(self):
+        '''Removes the currently selected element from the diagram.'''
+        self.elements.pop(self.elements.index(self.obj))
+        self.setStatus(self.NOP)
+        self.draw()
     
     def moveSelectedElement(self, direction):
         '''Moves the currently selected element.
