@@ -276,7 +276,7 @@ class GUI:
             self.INSERT_CRITERION: 'Inserting new Criterion. Press "Esc" to cancel.',
             self.INSERT_OPTION: 'Inserting new Option. Press "Esc" to cancel.',
             self.INSERT_QUESTION: 'Inserting new Question. Press "Esc" to cancel.',
-            self.INSERT_RELATIONSHIP: 'Select two elementos to insert a new Relationship. Press "Esc" to cancel.',
+            self.INSERT_RELATIONSHIP: 'Select two elements to insert a new Relationship. Press "Esc" to cancel.',
             self.SELECTED_ELEMENT: 'Selected element. Press "Esc" to cancel.'
         }
         self.setStatus(self.NOP)
