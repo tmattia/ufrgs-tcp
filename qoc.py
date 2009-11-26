@@ -17,7 +17,7 @@ class RelationshipNotPossible(Exception):
     pass
 
 class Relational(object):
-    def __init__(self, relates_to = []):
+    def __init__(self, relates_to = ()):
         '''Defines a Relational object.
         
         relates_to: list of class references with acceptable relationships
@@ -37,7 +37,7 @@ class Relational(object):
         element: second element
         pro: boolean defining if first element favors second element or not
         '''
-        if element.__class__ in self._relates_to:
+        if isinstance(element, self._relates_to):
             r = Relationship(self, element, pro)
             if r in self._relationships:
                 raise RelationshipAlreadyExists
@@ -66,7 +66,8 @@ class Relational(object):
         '''
         index = self.hasRelationship(element)
         if index >= 0:
-            del self._relationships[index]
+            return self._relationships.pop(index)
+        return None
     
     def favors(self, element):
         '''If there is a relationship to another element, returns a boolean
@@ -128,7 +129,7 @@ class Option(Element, Relational):
         description: option's description
         '''
         Element.__init__(self, description)
-        Relational.__init__(self, [Question, Criterion])
+        Relational.__init__(self, (Question, Criterion))
 
 class Question(Element, Relational):
     def __init__(self, description):
@@ -137,7 +138,7 @@ class Question(Element, Relational):
         description: question's description
         '''
         Element.__init__(self, description)
-        Relational.__init__(self, [Option, Criterion])
+        Relational.__init__(self, (Option, Criterion))
 
 
 if __name__ == '__main__':

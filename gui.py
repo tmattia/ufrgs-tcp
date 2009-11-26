@@ -13,7 +13,8 @@ except:
     sys.exit(1)
 
 import cairo
-from qoc import Element, Criterion, Option, Question
+from qoc import Element, Criterion, Option, Question, Relational, Relationship, RelationshipNotPossible, RelationshipAlreadyExists
+from math import pi
 
 # keyboard event codes
 ESC = 65307
@@ -23,13 +24,43 @@ UP = 65362
 RIGHT = 65363
 DOWN = 65364
 
-class DiagramElement(Element):
-    def __init__(self, description):
-        '''Defines a diagram element.
+class ElementIsNotRelational(Exception):
+    '''Exception signalizing that a given element is not relational.'''
+    pass
+
+class DiagramRelationship(Relationship):
+    def __init__(self, elementA, elementB, pro=True):
+        '''Defines a directional diagram relationship from the first to the
+        second element.
         
-        description: diagram element's description
+        elementA: first element
+        elementB: second element'''
+        elementA.addRelationship(elementB, pro)
+        Relationship.__init__(self, elementA, elementB)
+        if self.pro:
+            self.color = (0.5, 0.5, 0.5)
+        else:
+            self.color = (1.0, 1.0, 1.0)
+    
+    def hasPoint(self, x, y):
+        return False
+    
+    def draw(self, cr):
+        '''Draws the relationship.
+        
+        cr: cairo context in which the relationship will be drawn
         '''
-        Element.__init__(self, description)
+        cr.set_source_rgb(self.color[0], self.color[1], self.color[2])
+        cr.move_to(self.elementA.x + self.elementA.width / 2,
+            self.elementA.y + self.elementA.height / 2)
+        cr.line_to(self.elementB.x + self.elementB.width / 2,
+            self.elementB.y + self.elementB.height / 2)
+        cr.stroke()
+        
+
+class DiagramElement(object):
+    def __init__(self):
+        '''Defines a diagram element.'''
         self.color = None
         self.x = None
         self.y = None
@@ -52,6 +83,10 @@ class DiagramElement(Element):
         '''
         self.x = x
         self.y = y
+    
+    def hasPoint(self, x, y):
+        return (x > self.x and x < (self.x + self.width) \
+            and y > self.y and y < (self.y + self.height))
     
     def draw(self, cr):
         '''Draws the element.
@@ -93,31 +128,34 @@ class DiagramElement(Element):
                 self.y + self.LINE_HEIGHT + self.LINE_PADDING)
             cr.show_text(self.description)
 
-class DiagramCriterion(DiagramElement):
+class DiagramCriterion(DiagramElement, Criterion):
     '''Defines a diagram criterion, which is represented as a red square.
     
     description: diagram criterion's description
     '''
     def __init__(self, description):
-        DiagramElement.__init__(self, description)
+        DiagramElement.__init__(self)
+        Criterion.__init__(self, description)
         self.color = (1.0, 0.0, 0.0)
 
-class DiagramOption(DiagramElement):
+class DiagramOption(DiagramElement, Option):
     '''Defines a diagram option, which is represented as a green square.
     
     description: diagram option's description
     '''
     def __init__(self, description):
-        DiagramElement.__init__(self, description)
+        DiagramElement.__init__(self)
+        Option.__init__(self, description)
         self.color = (0.0, 1.0, 0.0)
 
-class DiagramQuestion(DiagramElement):
+class DiagramQuestion(DiagramElement, Question):
     '''Defines a diagram question, which is represented as a blue square.
     
     description: diagram question's description
     '''
     def __init__(self, description):
-        DiagramElement.__init__(self, description)
+        DiagramElement.__init__(self)
+        Question.__init__(self, description)
         self.color = (0.0, 0.0, 1.0)
 
 class GUI:
@@ -135,17 +173,20 @@ class GUI:
         self.mainWindow.show_all()
         
         self.elements = []
+        self.relationships = []
         
         self.NOP = 0
         self.INSERT_CRITERION = 1
         self.INSERT_OPTION = 2
         self.INSERT_QUESTION = 3
-        self.SELECTED_ELEMENT = 4
+        self.INSERT_RELATIONSHIP = 4
+        self.SELECTED_ELEMENT = 5
         self.statusMsg = {
             self.NOP: '',
             self.INSERT_CRITERION: 'Inserting new Criterion. Press "Esc" to cancel.',
             self.INSERT_OPTION: 'Inserting new Option. Press "Esc" to cancel.',
             self.INSERT_QUESTION: 'Inserting new Question. Press "Esc" to cancel.',
+            self.INSERT_RELATIONSHIP: 'Select two elementos to insert a new Relationship. Press "Esc" to cancel.',
             self.SELECTED_ELEMENT: 'Selected element. Press "Esc" to cancel.'
         }
         self.currentStatus = self.NOP
@@ -162,7 +203,7 @@ class GUI:
         cr.rectangle(0, 0, self.WIDTH, self.HEIGHT)
         cr.fill()
         
-        for el in self.elements:
+        for el in self.elements + self.relationships:
             el.draw(cr)
     
     def handleKeyboard(self, widget, event):
@@ -176,8 +217,18 @@ class GUI:
                 self.moveSelectedElement(event.keyval)
     
     def removeSelectedElement(self):
-        '''Removes the currently selected element from the diagram.'''
-        self.elements.pop(self.elements.index(self.obj))
+        '''Removes the currently selected element from the diagram. If there are
+        any relationships with the currently selected element, they are removed
+        as well.'''
+        for el in self.elements:
+            if isinstance(el, Relational) and el.hasRelationship(self.obj) >= 0:
+                r = el.removeRelationship(self.obj)
+                self.relationships.pop(self.relationships.index(r))
+            elif isinstance(self.obj, Relational) \
+                and self.obj.hasRelationship(el) >= 0:
+                r = self.obj.removeRelationship(el)
+                del self.relationships[self.relationships.index(r)]
+        del self.elements[self.elements.index(self.obj)]
         self.setStatus(self.NOP)
         self.draw()
     
@@ -215,9 +266,7 @@ class GUI:
         y: y coordinate
         '''
         for el in self.elements:
-            if x > el.x and x < (el.x + el.width) \
-                and y > el.y and y < (el.y + el.height):
-                self.setStatus(self.SELECTED_ELEMENT, el)
+            if el.hasPoint(x, y):
                 return el
         return None
     
@@ -234,7 +283,33 @@ class GUI:
                 self.setStatus(self.NOP)
                 
             elif self.currentStatus == self.NOP:
-                self.selectElement(event.x, event.y)
+                el = self.selectElement(event.x, event.y)
+                if el:
+                    self.setStatus(self.SELECTED_ELEMENT, el)
+                
+            elif self.currentStatus == self.INSERT_RELATIONSHIP:
+                self.handleInsertRelationship(event)
+    
+    def handleInsertRelationship(self, event):
+        '''Handles the states defined by mouse clicks between a insert
+        relationship action.
+        
+        event: the mouse click event'''
+        if self.obj is None:
+            self.obj = self.selectElement(event.x, event.y)
+        else:
+            el2 = self.selectElement(event.x, event.y)
+            try:
+                r = DiagramRelationship(self.obj, el2)
+                self.relationships.append(r)
+                self.draw()
+                self.setStatus(self.NOP)
+            except RelationshipAlreadyExists:
+                print 'ja existe'
+                self.setStatus(self.NOP)
+            except RelationshipNotPossible:
+                print 'nao pode relacao'
+                self.setStatus(self.NOP)
     
     def new(self, widget):
         '''Creates a new diagram.'''
@@ -293,7 +368,7 @@ class GUI:
     
     def insertRelationship(self, widget):
         '''Inserts a new relationship on the drawing area.'''
-        print 'relationship'
+        self.setStatus(self.INSERT_RELATIONSHIP)
     
     def getTextInput(self, title, labelText):
         '''Shows a dialog window with a text entry. Returns a string with the

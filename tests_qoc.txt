@@ -56,14 +56,21 @@ Relationship checking and updating
 0
 >>> q.hasRelationship(c)
 1
->>> q.removeRelationship(o)
+>>> x = q.removeRelationship(o)
+>>> isinstance(x, Relationship)
+True
 >>> q.hasRelationship(o)
 -1
 >>> o.hasRelationship(c)
 0
 >>> o.favors(c)
 True
->>> o.removeRelationship(c)
+>>> x = o.removeRelationship(c)
+>>> isinstance(x, Relationship)
+True
+>>> x = o.removeRelationship(c)
+>>> x is None
+True
 >>> o.favors(c)
 Traceback (most recent call last):
     ...
