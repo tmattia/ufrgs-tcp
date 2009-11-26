@@ -25,4 +25,6 @@ FUNCIONAIS
 - Interface deve representar relacionamentos como linhas entre elementos
 
 NÃO FUNCIONAIS
-- O sistema deve ser entregue até o dia 19/11/2009
+- O sistema deve ser entregue até o dia 26/11/2009
+- O sistema deve ter um tempo de resposta rápido
+- O sistema deve possuir uma interface limpa e agradável tanto visualmente como funcionalmente
