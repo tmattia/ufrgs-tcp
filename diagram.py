@@ -5,10 +5,6 @@ from qoc import *
 from keyboard_codes import *
 import cairo
 
-class ElementIsNotRelational(Exception):
-    '''Exception signalizing that a given element is not relational.'''
-    pass
-
 class DiagramRelationship(Relationship):
     def __init__(self, elementA, elementB, pro=True):
         '''Defines a directional diagram relationship from the first to the
@@ -17,11 +13,11 @@ class DiagramRelationship(Relationship):
         elementA: first element
         elementB: second element'''
         elementA.addRelationship(elementB, pro)
-        Relationship.__init__(self, elementA, elementB)
+        Relationship.__init__(self, elementA, elementB, pro)
         if self.pro:
-            self.color = (0.5, 0.5, 0.5)
+            self.color = (0.6, 0.6, 0.6)
         else:
-            self.color = (1.0, 1.0, 1.0)
+            self.color = (0.2, 0.2, 0.2)
     
     def hasPoint(self, x, y):
         return False
@@ -206,13 +202,13 @@ class Diagram(object):
         self.elements.append(el)
         self.draw()
     
-    def addRelationship(self, elementA, elementB):
+    def addRelationship(self, elementA, elementB, pro):
         '''Adds a directional relationship from the first to the second element.
         
         elementA: first element
         elementB: second element
         '''
-        r = DiagramRelationship(elementA, elementB)
+        r = DiagramRelationship(elementA, elementB, pro)
         self.relationships.append(r)
         self.draw()
     

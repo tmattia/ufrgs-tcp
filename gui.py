@@ -71,10 +71,7 @@ class GUI:
                 self.diagram.moveElement(self.obj, event.keyval)
     
     def handleClick(self, widget, event):
-        '''Handles a left click event on the drawing area.'''
-        if event.button != 1:
-            return
-        
+        '''Handles a click event on the drawing area.'''
         opts = [
             self.INSERT_CRITERION,
             self.INSERT_OPTION,
@@ -92,11 +89,15 @@ class GUI:
         elif self.currentStatus == self.INSERT_RELATIONSHIP:
             if self.obj is None:
                 self.obj = self.diagram.selectElement(event.x, event.y)
+                if not isinstance(self.obj, Relational):
+                    print 'primeiro objeto tem que ser relacional'
+                    self.setStatus(self.NOP)
             else:
                 el = self.diagram.selectElement(event.x, event.y)
                 if el:
                     try:
-                        self.diagram.addRelationship(self.obj, el)
+                        self.diagram.addRelationship(self.obj, el,
+                            event.button == 1)
                     except RelationshipAlreadyExists:
                         print 'ja existe'
                     except RelationshipNotPossible:
