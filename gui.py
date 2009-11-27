@@ -136,10 +136,6 @@ class GUI:
                 f.close()
             except Exception, e:
                 print 'Erro ao salvar', e
-    
-    def saveAs(self, widget):
-        '''Saves the current working diagram as a different file.'''
-        print 'save as'
 
     def quit(self, widget):
         '''Quits the application.'''
