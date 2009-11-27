@@ -15,6 +15,7 @@ except:
 from qoc import *
 from diagram import *
 from keyboard_codes import *
+import pickle
 
 class GUI:
     def __init__(self):
@@ -106,17 +107,35 @@ class GUI:
     
     def new(self, widget=None):
         '''Creates a new diagram.'''
-        for el in self.diagram.elements:
+        while len(self.diagram.elements):
+            el = self.diagram.elements[0]
             self.diagram.removeElement(el)
         self.diagram.draw()
     
     def openFile(self, widget):
         '''Opens an existing diagram.'''
-        print 'open'
+        filename = self.getTextInput('Open file', 'Full path: ')
+        if filename:
+            try:
+                f = open(filename, 'r')
+                loadObj = pickle.load(f)
+                self.diagram.elements, self.diagram.relationships = loadObj
+                f.close()
+                self.diagram.draw()
+            except Exception, e:
+                print 'Erro ao abrir', e
     
     def save(self, widget):
         '''Saves the current working diagram.'''
-        print 'save'
+        filename = self.getTextInput('Save file', 'Full path: ')
+        if filename:
+            try:
+                saveObj = (self.diagram.elements, self.diagram.relationships)
+                f = open(filename, 'w')
+                pickle.dump(saveObj, f)
+                f.close()
+            except Exception, e:
+                print 'Erro ao salvar', e
     
     def saveAs(self, widget):
         '''Saves the current working diagram as a different file.'''
