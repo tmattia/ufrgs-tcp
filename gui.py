@@ -104,9 +104,11 @@ class GUI:
                         print 'nao pode relacao'
                     self.setStatus(self.NOP)
     
-    def new(self, widget):
+    def new(self, widget=None):
         '''Creates a new diagram.'''
-        print 'new'
+        for el in self.diagram.elements:
+            self.diagram.removeElement(el)
+        self.diagram.draw()
     
     def openFile(self, widget):
         '''Opens an existing diagram.'''
