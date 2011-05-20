@@ -10,6 +10,7 @@ try:
     import gtk
     import gtk.glade
 except:
+    import sys
     sys.exit(1)
 
 from qoc import *
