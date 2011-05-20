@@ -219,7 +219,7 @@ class Diagram(object):
         x: x coordinate
         y: y coordinate
         '''
-        for el in self.elements:
+        for el in self.elements + self.relationships:
             if el.hasPoint(x, y):
                 return el
         return None
